@@ -31,19 +31,9 @@
 <body>
   <div id="map"></div>
   
-  <!-- Панель керування -->
-  <div id="controlPanel" style="position: absolute; top: 10px; right: 10px; background: #222; padding: 10px; border-radius: 8px; z-index: 1000; color: white; font-family: sans-serif;">
-    <h4 style="margin: 0 0 10px 0;">Керування областями</h4>
-    <button onclick="clearAllHighlights()" style="background: #d32f2f; color: white; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer; margin: 2px;">🗑️ Очистити всі</button><br>
-    <button onclick="highlightAll()" style="background: #1976d2; color: white; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer; margin: 2px;">🔴 Обвести всі</button><br>
-    <button onclick="toggleDrawingMode()" style="background: #388e3c; color: white; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer; margin: 2px;">✏️ Малювати область</button><br>
-    <button onclick="clearDrawnAreas()" style="background: #7b1fa2; color: white; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer; margin: 2px;">🧹 Очистити малювання</button><br>
-    <button onclick="highlightSpecific('Полтавська')" style="background: #ff5722; color: white; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer; margin: 2px;">📍 Полтавська</button><br>
-    <button onclick="highlightSpecific('Київська')" style="background: #ff9800; color: white; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer; margin: 2px;">📍 Київська</button><br>
-    <button onclick="highlightSpecific('Львівська')" style="background: #4caf50; color: white; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer; margin: 2px;">📍 Львівська</button><br>
-    <button onclick="highlightSpecific('Харківська')" style="background: #9c27b0; color: white; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer; margin: 2px;">📍 Харківська</button><br>
-    <button onclick="highlightSpecific('Вінницька область')" style="background: #607d8b; color: white; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer; margin: 2px;">📍 Вінницька</button><br>
-    <button onclick="highlightSpecific('Донецька область')" style="background: #795548; color: white; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer; margin: 2px;">📍 Донецька</button>
+  <!-- Контекстне меню для додавання БПЛА -->
+  <div id="contextMenu" style="position: absolute; display: none; background: #222; color: white; border: 1px solid #444; padding: 8px; border-radius: 6px; z-index: 10000; font-family: sans-serif;">
+    <button onclick="addDrone()" style="background: #333; border: none; padding: 5px 10px; color: white; cursor: pointer; border-radius: 4px;">➕ Додати БПЛА</button>
   </div>
 
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
