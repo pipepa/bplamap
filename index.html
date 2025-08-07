@@ -2,7 +2,7 @@
 <html lang="uk">
 <head>
   <meta charset="utf-8" />
-  <title>Карта з БПЛА</title>
+  <title>Обведення областей України</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <link
     rel="stylesheet"
@@ -13,84 +13,194 @@
     html, body { margin: 0; padding: 0; height: 100%; background: #121212; }
     #map { height: 100vh; width: 100vw; }
 
-    #contextMenu {
-      position: absolute;
-      display: none;
-      background: #222;
-      color: white;
-      border: 1px solid #444;
-      padding: 8px;
-      border-radius: 6px;
-      z-index: 10000;
-      font-family: sans-serif;
-    }
-
-    #contextMenu button {
-      background: #333;
-      border: none;
+    .leaflet-popup-content button {
+      margin: 5px 0;
       padding: 5px 10px;
+      background: #333;
       color: white;
+      border: none;
+      border-radius: 4px;
       cursor: pointer;
     }
 
-    #contextMenu button:hover {
+    .leaflet-popup-content button:hover {
       background: #555;
     }
   </style>
 </head>
 <body>
   <div id="map"></div>
-  <div id="contextMenu">
-    <button onclick="addDrone()">➕ Додати БПЛА</button>
+  
+  <!-- Панель керування -->
+  <div id="controlPanel" style="position: absolute; top: 10px; right: 10px; background: #222; padding: 10px; border-radius: 8px; z-index: 1000; color: white; font-family: sans-serif;">
+    <h4 style="margin: 0 0 10px 0;">Керування областями</h4>
+    <button onclick="clearAllHighlights()" style="background: #d32f2f; color: white; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer; margin: 2px;">🗑️ Очистити всі</button><br>
+    <button onclick="highlightAll()" style="background: #1976d2; color: white; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer; margin: 2px;">🔴 Обвести всі</button><br>
+    <button onclick="toggleDrawingMode()" style="background: #388e3c; color: white; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer; margin: 2px;">✏️ Малювати область</button><br>
+    <button onclick="clearDrawnAreas()" style="background: #7b1fa2; color: white; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer; margin: 2px;">🧹 Очистити малювання</button>
   </div>
 
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
+  <script src="https://unpkg.com/leaflet-ajax"></script> <!-- для підвантаження GeoJSON -->
   <script>
     const map = L.map('map').setView([49.0, 31.0], 6);
 
+    // Темна карта
     L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
       attribution: '&copy; OpenStreetMap & CartoDB',
       subdomains: 'abcd',
       maxZoom: 19
     }).addTo(map);
 
-    const contextMenu = document.getElementById("contextMenu");
-    let clickedLatLng = null;
+    // Зберігатиме виділені області
+    const selectedLayers = new Map();
 
-    map.on('contextmenu', function (e) {
-      clickedLatLng = e.latlng;
-      contextMenu.style.left = e.originalEvent.pageX + "px";
-      contextMenu.style.top = e.originalEvent.pageY + "px";
-      contextMenu.style.display = "block";
-    });
+    // Підвантажуємо області з GeoJSON
+    fetch('https://raw.githubusercontent.com/deldersveld/topojson/master/countries/ukraine/ukr-admin1.geojson')
+      .then(response => response.json())
+      .then(data => {
+        L.geoJSON(data, {
+          style: {
+            color: "#666",
+            weight: 1,
+            fillOpacity: 0.1
+          },
+          onEachFeature: function (feature, layer) {
+            const name = feature.properties?.name || "Область";
 
-    map.on('click', function () {
-      contextMenu.style.display = "none";
-    });
+            layer.on('click', function (e) {
+              const popup = `
+                <strong>${name}</strong><br/>
+                <button onclick="highlight('${name}')">🔴 Обвести</button><br/>
+                <button onclick="unhighlight('${name}')">⚪ Зняти обведення</button>
+              `;
+              layer.bindPopup(popup).openPopup();
+            });
 
-    map.on("movestart zoomstart", () => {
-      contextMenu.style.display = "none";
-    });
-
-    const droneIcon = L.icon({
-      iconUrl: 'image.png',
-      iconSize: [32, 32],
-      iconAnchor: [16, 16]
-    });
-
-    function addDrone() {
-      if (!clickedLatLng) return;
-
-      const marker = L.marker(clickedLatLng, { icon: droneIcon }).addTo(map);
-      marker.bindPopup("БПЛА");
-
-      // Правий клік по БПЛА — видалити
-      marker.on('contextmenu', function (e) {
-        map.removeLayer(marker);
+            // Зберігаємо посилання на шар
+            selectedLayers.set(feature.properties.name, layer);
+          }
+        }).addTo(map);
       });
 
-      contextMenu.style.display = "none";
+    // Обвести область
+    window.highlight = function (name) {
+      const layer = selectedLayers.get(name);
+      if (layer) {
+        layer.setStyle({
+          color: "red",
+          weight: 3,
+          fillColor: "red",
+          fillOpacity: 0.3
+        });
+        layer.closePopup();
+      }
+    };
+
+    // Зняти обведення
+    window.unhighlight = function (name) {
+      const layer = selectedLayers.get(name);
+      if (layer) {
+        layer.setStyle({
+          color: "#666",
+          weight: 1,
+          fillColor: "#000",
+          fillOpacity: 0.1
+        });
+        layer.closePopup();
+      }
+    };
+
+    // Очистити всі обведення
+    window.clearAllHighlights = function () {
+      selectedLayers.forEach((layer, name) => {
+        layer.setStyle({
+          color: "#666",
+          weight: 1,
+          fillColor: "#000",
+          fillOpacity: 0.1
+        });
+      });
+    };
+
+    // Обвести всі області
+    window.highlightAll = function () {
+      selectedLayers.forEach((layer, name) => {
+        layer.setStyle({
+          color: "red",
+          weight: 3,
+          fillColor: "red",
+          fillOpacity: 0.3
+        });
+      });
+    };
+
+    // Режим малювання
+    let drawingMode = false;
+    let drawingLayer = null;
+
+    window.toggleDrawingMode = function () {
+      drawingMode = !drawingMode;
+      const button = document.querySelector('button[onclick="toggleDrawingMode()"]');
+      
+      if (drawingMode) {
+        button.style.background = '#f57c00';
+        button.textContent = '⏹️ Зупинити малювання';
+        startDrawing();
+      } else {
+        button.style.background = '#388e3c';
+        button.textContent = '✏️ Малювати область';
+        stopDrawing();
+      }
+    };
+
+    function startDrawing() {
+      if (!drawingLayer) {
+        drawingLayer = L.layerGroup().addTo(map);
+      }
+      
+      map.on('click', onMapClick);
     }
+
+    function stopDrawing() {
+      map.off('click', onMapClick);
+    }
+
+    function onMapClick(e) {
+      if (!drawingMode) return;
+      
+      const marker = L.marker(e.latlng, {
+        icon: L.divIcon({
+          className: 'drawing-marker',
+          html: '<div style="background: red; width: 8px; height: 8px; border-radius: 50%; border: 2px solid white;"></div>',
+          iconSize: [12, 12]
+        })
+      }).addTo(drawingLayer);
+      
+      // Зберігаємо точки для створення полігону
+      if (!window.drawingPoints) {
+        window.drawingPoints = [];
+      }
+      window.drawingPoints.push(e.latlng);
+      
+      // Якщо є більше 2 точок, малюємо полігон
+      if (window.drawingPoints.length >= 3) {
+        const polygon = L.polygon(window.drawingPoints, {
+          color: 'red',
+          weight: 3,
+          fillColor: 'red',
+          fillOpacity: 0.3
+        }).addTo(drawingLayer);
+      }
+    }
+
+    // Очистити намальовані області
+    window.clearDrawnAreas = function () {
+      if (drawingLayer) {
+        drawingLayer.clearLayers();
+      }
+      window.drawingPoints = [];
+    };
   </script>
 </body>
 </html>
