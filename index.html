@@ -122,6 +122,46 @@
       console.log('Всі області завантажено');
     });
 
+    // Контекстне меню для додавання БПЛА
+    let contextMenu = document.getElementById("contextMenu");
+    let clickedLatLng = null;
+
+    // При правому кліку відкриваємо меню
+    map.on('contextmenu', function (e) {
+      clickedLatLng = e.latlng;
+
+      contextMenu.style.left = e.originalEvent.pageX + "px";
+      contextMenu.style.top = e.originalEvent.pageY + "px";
+      contextMenu.style.display = "block";
+    });
+
+    // Клік десь інде — ховаємо меню
+    map.on('click', function () {
+      contextMenu.style.display = "none";
+    });
+
+    // Додати БПЛА
+    window.addDrone = function () {
+      if (!clickedLatLng) return;
+
+      const droneIcon = L.icon({
+        iconUrl: 'image.png',
+        iconSize: [32, 32],
+        iconAnchor: [16, 16]
+      });
+
+      L.marker(clickedLatLng, { icon: droneIcon })
+        .addTo(map)
+        .bindPopup("БПЛА");
+
+      contextMenu.style.display = "none";
+    };
+
+    // При scroll/zoom також ховаємо меню
+    map.on("movestart zoomstart", () => {
+      contextMenu.style.display = "none";
+    });
+
     // Обвести область
     window.highlight = function (name) {
       const layer = selectedLayers.get(name);
