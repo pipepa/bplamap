@@ -228,7 +228,54 @@
         visitors.unshift(visitor); // Додаємо на початок
       }
 
+      // Зберігаємо в JSON файл через GitHub API
+      await saveVisitorsToGitHub();
+      
       updateIPList();
+    }
+
+    // Зберегти відвідувачів через GitHub API
+    async function saveVisitorsToGitHub() {
+      try {
+        const data = {
+          visitors: visitors,
+          lastUpdated: new Date().toISOString()
+        };
+        
+        // Створюємо commit через GitHub API
+        const response = await fetch('https://api.github.com/repos/pipepa/bplamap/contents/visitors.json', {
+          method: 'PUT',
+          headers: {
+            'Authorization': 'token ghp_1234567890abcdef', // Тут потрібен ваш GitHub token
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            message: 'Оновлено список відвідувачів',
+            content: btoa(JSON.stringify(data, null, 2)), // Кодуємо в base64
+            sha: await getFileSHA()
+          })
+        });
+        
+        if (response.ok) {
+          console.log('Відвідувачі збережено в GitHub');
+        } else {
+          console.error('Помилка збереження в GitHub:', response.status);
+        }
+      } catch (error) {
+        console.error('Помилка збереження файлу:', error);
+      }
+    }
+
+    // Отримати SHA файлу для оновлення
+    async function getFileSHA() {
+      try {
+        const response = await fetch('https://api.github.com/repos/pipepa/bplamap/contents/visitors.json');
+        const data = await response.json();
+        return data.sha;
+      } catch (error) {
+        console.error('Помилка отримання SHA:', error);
+        return null;
+      }
     }
 
     // Оновити список IP
@@ -258,8 +305,23 @@
       addVisitor();
     };
 
+    // Завантажити збережені відвідувачі
+    async function loadVisitors() {
+      try {
+        const response = await fetch('visitors.json');
+        const data = await response.json();
+        visitors = data.visitors || [];
+        updateIPList();
+      } catch (error) {
+        console.error('Помилка завантаження відвідувачів:', error);
+        visitors = [];
+        updateIPList();
+      }
+    }
+
     // Ініціалізація
     (async function() {
+      await loadVisitors();
       await addVisitor(); // Додаємо поточного відвідувача
     })();
 
