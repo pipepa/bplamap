@@ -2,7 +2,7 @@
 <html lang="uk">
 <head>
   <meta charset="utf-8" />
-  <title>Обведення областей України</title>
+  <title>БПЛА для Миколи</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <link
     rel="stylesheet"
@@ -30,6 +30,15 @@
 </head>
 <body>
   <div id="map"></div>
+  
+  <!-- Панель IP адрес зліва -->
+  <div id="ipPanel" style="position: absolute; top: 10px; left: 10px; background: #222; padding: 15px; border-radius: 8px; z-index: 1000; color: white; font-family: sans-serif; max-width: 300px; max-height: 400px; overflow-y: auto;">
+    <h4 style="margin: 0 0 15px 0; color: #4CAF50;">🌐 Відвідувачі</h4>
+    <div id="ipList" style="font-size: 12px;">
+      <div style="color: #888; font-style: italic;">Завантаження...</div>
+    </div>
+    <button onclick="refreshIPs()" style="background: #4CAF50; color: white; border: none; padding: 8px 12px; border-radius: 4px; cursor: pointer; margin-top: 10px; width: 100%;">🔄 Оновити</button>
+  </div>
   
   <!-- Контекстне меню для додавання БПЛА -->
   <div id="contextMenu" style="position: absolute; display: none; background: #222; color: white; border: 1px solid #444; padding: 8px; border-radius: 6px; z-index: 10000; font-family: sans-serif;">
@@ -162,6 +171,109 @@
       contextMenu.style.display = "none";
     });
 
+    // Функції для роботи з IP адресами
+    let visitors = [];
+
+    // Отримати поточну IP адресу
+    async function getCurrentIP() {
+      try {
+        const response = await fetch('https://api.ipify.org?format=json');
+        const data = await response.json();
+        return data.ip;
+      } catch (error) {
+        console.error('Помилка отримання IP:', error);
+        return 'Невідомо';
+      }
+    }
+
+    // Отримати інформацію про IP
+    async function getIPInfo(ip) {
+      try {
+        const response = await fetch(`https://ipapi.co/${ip}/json/`);
+        const data = await response.json();
+        return {
+          country: data.country_name || 'Невідомо',
+          city: data.city || 'Невідомо',
+          region: data.region || 'Невідомо'
+        };
+      } catch (error) {
+        console.error('Помилка отримання інформації про IP:', error);
+        return {
+          country: 'Невідомо',
+          city: 'Невідомо',
+          region: 'Невідомо'
+        };
+      }
+    }
+
+    // Додати відвідувача
+    async function addVisitor() {
+      const ip = await getCurrentIP();
+      const info = await getIPInfo(ip);
+      const timestamp = new Date().toLocaleString('uk-UA');
+      
+      const visitor = {
+        ip: ip,
+        country: info.country,
+        city: info.city,
+        region: info.region,
+        timestamp: timestamp
+      };
+
+      // Перевіряємо чи вже є такий IP
+      const existingIndex = visitors.findIndex(v => v.ip === ip);
+      if (existingIndex !== -1) {
+        visitors[existingIndex] = visitor;
+      } else {
+        visitors.unshift(visitor); // Додаємо на початок
+      }
+
+      // Зберігаємо в localStorage
+      localStorage.setItem('visitors', JSON.stringify(visitors));
+      
+      updateIPList();
+    }
+
+    // Оновити список IP
+    function updateIPList() {
+      const ipList = document.getElementById('ipList');
+      
+      if (visitors.length === 0) {
+        ipList.innerHTML = '<div style="color: #888; font-style: italic;">Немає відвідувачів</div>';
+        return;
+      }
+
+      ipList.innerHTML = visitors.map(visitor => `
+        <div style="border-bottom: 1px solid #444; padding: 8px 0; margin-bottom: 8px;">
+          <div style="font-weight: bold; color: #4CAF50;">${visitor.ip}</div>
+          <div style="color: #ccc; font-size: 11px;">
+            ${visitor.city}, ${visitor.region}, ${visitor.country}
+          </div>
+          <div style="color: #888; font-size: 10px;">
+            ${visitor.timestamp}
+          </div>
+        </div>
+      `).join('');
+    }
+
+    // Оновити список
+    window.refreshIPs = function() {
+      addVisitor();
+    };
+
+    // Завантажити збережені відвідувачі
+    function loadVisitors() {
+      const saved = localStorage.getItem('visitors');
+      if (saved) {
+        visitors = JSON.parse(saved);
+        updateIPList();
+      }
+    }
+
+    // Ініціалізація
+    loadVisitors();
+    addVisitor(); // Додаємо поточного відвідувача
+
     // Обвести область
     window.highlight = function (name) {
       const layer = selectedLayers.get(name);
@@ -190,116 +302,7 @@
       }
     };
 
-    // Очистити всі обведення
-    window.clearAllHighlights = function () {
-      selectedLayers.forEach((layer, name) => {
-        layer.setStyle({
-          color: "#666",
-          weight: 1,
-          fillColor: "#000",
-          fillOpacity: 0.1
-        });
-      });
-    };
 
-    // Обвести всі області
-    window.highlightAll = function () {
-      selectedLayers.forEach((layer, name) => {
-        layer.setStyle({
-          color: "red",
-          weight: 3,
-          fillColor: "red",
-          fillOpacity: 0.3
-        });
-      });
-    };
-
-    // Режим малювання
-    let drawingMode = false;
-    let drawingLayer = null;
-
-    window.toggleDrawingMode = function () {
-      drawingMode = !drawingMode;
-      const button = document.querySelector('button[onclick="toggleDrawingMode()"]');
-      
-      if (drawingMode) {
-        button.style.background = '#f57c00';
-        button.textContent = '⏹️ Зупинити малювання';
-        startDrawing();
-      } else {
-        button.style.background = '#388e3c';
-        button.textContent = '✏️ Малювати область';
-        stopDrawing();
-      }
-    };
-
-    function startDrawing() {
-      if (!drawingLayer) {
-        drawingLayer = L.layerGroup().addTo(map);
-      }
-      
-      map.on('click', onMapClick);
-    }
-
-    function stopDrawing() {
-      map.off('click', onMapClick);
-    }
-
-    function onMapClick(e) {
-      if (!drawingMode) return;
-      
-      const marker = L.marker(e.latlng, {
-        icon: L.divIcon({
-          className: 'drawing-marker',
-          html: '<div style="background: red; width: 8px; height: 8px; border-radius: 50%; border: 2px solid white;"></div>',
-          iconSize: [12, 12]
-        })
-      }).addTo(drawingLayer);
-      
-      // Зберігаємо точки для створення полігону
-      if (!window.drawingPoints) {
-        window.drawingPoints = [];
-      }
-      window.drawingPoints.push(e.latlng);
-      
-      // Якщо є більше 2 точок, малюємо полігон
-      if (window.drawingPoints.length >= 3) {
-        const polygon = L.polygon(window.drawingPoints, {
-          color: 'red',
-          weight: 3,
-          fillColor: 'red',
-          fillOpacity: 0.3
-        }).addTo(drawingLayer);
-      }
-    }
-
-    // Очистити намальовані області
-    window.clearDrawnAreas = function () {
-      if (drawingLayer) {
-        drawingLayer.clearLayers();
-      }
-      window.drawingPoints = [];
-    };
-
-    // Швидкий вибір конкретної області
-    window.highlightSpecific = function (regionName) {
-      // Спочатку очищаємо всі обведення
-      clearAllHighlights();
-      
-      // Потім обводимо конкретну область
-      const layer = selectedLayers.get(regionName);
-      if (layer) {
-        layer.setStyle({
-          color: "red",
-          weight: 3,
-          fillColor: "red",
-          fillOpacity: 0.3
-        });
-        
-        // Центруємо карту на вибраній області
-        map.fitBounds(layer.getBounds());
-      }
-    };
   </script>
 </body>
 </html>
