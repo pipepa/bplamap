@@ -41,7 +41,9 @@
     <button onclick="highlightSpecific('Полтавська')" style="background: #ff5722; color: white; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer; margin: 2px;">📍 Полтавська</button><br>
     <button onclick="highlightSpecific('Київська')" style="background: #ff9800; color: white; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer; margin: 2px;">📍 Київська</button><br>
     <button onclick="highlightSpecific('Львівська')" style="background: #4caf50; color: white; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer; margin: 2px;">📍 Львівська</button><br>
-    <button onclick="highlightSpecific('Харківська')" style="background: #9c27b0; color: white; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer; margin: 2px;">📍 Харківська</button>
+    <button onclick="highlightSpecific('Харківська')" style="background: #9c27b0; color: white; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer; margin: 2px;">📍 Харківська</button><br>
+    <button onclick="highlightSpecific('Вінницька область')" style="background: #607d8b; color: white; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer; margin: 2px;">📍 Вінницька</button><br>
+    <button onclick="highlightSpecific('Донецька область')" style="background: #795548; color: white; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer; margin: 2px;">📍 Донецька</button>
   </div>
 
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
@@ -58,111 +60,77 @@
     // Зберігатиме виділені області
     const selectedLayers = new Map();
 
-    // Дані областей України (вбудовані в код)
-    const ukraineRegions = {
-      "type": "FeatureCollection",
-      "features": [
-        {
-          "type": "Feature",
-          "properties": {
-            "name": "Київська"
-          },
-          "geometry": {
-            "type": "Polygon",
-            "coordinates": [[
-              [29.5, 50.5], [30.5, 50.5], [30.5, 51.5], [29.5, 51.5], [29.5, 50.5]
-            ]]
-          }
-        },
-        {
-          "type": "Feature",
-          "properties": {
-            "name": "Полтавська"
-          },
-          "geometry": {
-            "type": "Polygon",
-            "coordinates": [[
-              [32.5, 48.5], [34.5, 48.5], [34.5, 50.5], [32.5, 50.5], [32.5, 48.5]
-            ]]
-          }
-        },
-        {
-          "type": "Feature",
-          "properties": {
-            "name": "Львівська"
-          },
-          "geometry": {
-            "type": "Polygon",
-            "coordinates": [[
-              [22.5, 48.5], [25.5, 48.5], [25.5, 50.5], [22.5, 50.5], [22.5, 48.5]
-            ]]
-          }
-        },
-        {
-          "type": "Feature",
-          "properties": {
-            "name": "Харківська"
-          },
-          "geometry": {
-            "type": "Polygon",
-            "coordinates": [[
-              [35.5, 48.5], [37.5, 48.5], [37.5, 50.5], [35.5, 50.5], [35.5, 48.5]
-            ]]
-          }
-        },
-        {
-          "type": "Feature",
-          "properties": {
-            "name": "Дніпропетровська"
-          },
-          "geometry": {
-            "type": "Polygon",
-            "coordinates": [[
-              [33.5, 47.5], [36.5, 47.5], [36.5, 49.5], [33.5, 49.5], [33.5, 47.5]
-            ]]
-          }
-        },
-        {
-          "type": "Feature",
-          "properties": {
-            "name": "Одеська"
-          },
-          "geometry": {
-            "type": "Polygon",
-            "coordinates": [[
-              [28.5, 45.5], [31.5, 45.5], [31.5, 47.5], [28.5, 47.5], [28.5, 45.5]
-            ]]
-          }
-        }
-      ]
-    };
+    // Завантажуємо всі області України з GeoJSON файлів
+    const regionFiles = [
+      'geojson/UA_32_Kyivska.geojson',
+      'geojson/UA_53_Poltavska.geojson',
+      'geojson/UA_46_Lvivska.geojson',
+      'geojson/UA_63_Kharkivska.geojson',
+      'geojson/UA_12_Dnipropetrovska.geojson',
+      'geojson/UA_51_Odeska.geojson',
+      'geojson/UA_05_Vinnytska.geojson',
+      'geojson/UA_71_Cherkaska.geojson',
+      'geojson/UA_74_Chernihivska.geojson',
+      'geojson/UA_77_Chernivetska.geojson',
+      'geojson/UA_68_Khmelnytska.geojson',
+      'geojson/UA_65_Khersonska.geojson',
+      'geojson/UA_61_Ternopilska.geojson',
+      'geojson/UA_59_Sumska.geojson',
+      'geojson/UA_56_Rivnenska.geojson',
+      'geojson/UA_48_Mykolaivska.geojson',
+      'geojson/UA_35_Kirovohradska.geojson',
+      'geojson/UA_26_Ivano_Frankivska.geojson',
+      'geojson/UA_23_Zaporizka.geojson',
+      'geojson/UA_21_Zakarpatska.geojson',
+      'geojson/UA_18_Zhytomyrska.geojson',
+      'geojson/UA_14_Donetska.geojson',
+      'geojson/UA_09_Luhanska.geojson',
+      'geojson/UA_07_Volynska.geojson'
+    ];
 
-    // Додаємо області на карту
-    L.geoJSON(ukraineRegions, {
-      style: {
-        color: "#666",
-        weight: 1,
-        fillOpacity: 0.1
-      },
-      onEachFeature: function (feature, layer) {
-        const name = feature.properties?.name || "Область";
+    // Функція для завантаження та додавання області
+    async function loadRegion(filePath) {
+      try {
+        const response = await fetch(filePath);
+        const data = await response.json();
+        
+        const layer = L.geoJSON(data, {
+          style: {
+            color: "#666",
+            weight: 1,
+            fillOpacity: 0.1
+          },
+          onEachFeature: function (feature, layer) {
+            const name = feature.properties?.name || "Область";
+            
+            layer.on('click', function (e) {
+              // Автоматично обводимо область при кліку
+              highlight(name);
+              
+              const popup = `
+                <strong>${name}</strong><br/>
+                <button onclick="highlight('${name}')">🔴 Обвести</button><br/>
+                <button onclick="unhighlight('${name}')">⚪ Зняти обведення</button>
+              `;
+              layer.bindPopup(popup).openPopup();
+            });
 
-        layer.on('click', function (e) {
-          // Автоматично обводимо область при кліку
-          highlight(name);
-          
-          const popup = `
-            <strong>${name}</strong><br/>
-            <button onclick="highlight('${name}')">🔴 Обвести</button><br/>
-            <button onclick="unhighlight('${name}')">⚪ Зняти обведення</button>
-          `;
-          layer.bindPopup(popup).openPopup();
-        });
-
-        // Зберігаємо посилання на шар
-        selectedLayers.set(feature.properties.name, layer);
+            // Зберігаємо посилання на шар
+            selectedLayers.set(name, layer);
+          }
+        }).addTo(map);
+        
+        return layer;
+      } catch (error) {
+        console.error(`Помилка завантаження ${filePath}:`, error);
+        return null;
       }
-    }).addTo(map);
+    }
+
+        // Завантажуємо всі області
+    Promise.all(regionFiles.map(loadRegion)).then(() => {
+      console.log('Всі області завантажено');
+    });
 
     // Обвести область
     window.highlight = function (name) {
