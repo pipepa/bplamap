@@ -38,7 +38,6 @@
       <div style="color: #888; font-style: italic;">Завантаження...</div>
     </div>
     <button onclick="refreshIPs()" style="background: #4CAF50; color: white; border: none; padding: 8px 12px; border-radius: 4px; cursor: pointer; margin-top: 10px; width: 100%;">🔄 Оновити</button>
-    <button onclick="saveVisitorsToFile()" style="background: #2196F3; color: white; border: none; padding: 8px 12px; border-radius: 4px; cursor: pointer; margin-top: 5px; width: 100%;">💾 Зберегти файл</button>
   </div>
   
   <!-- Контекстне меню для додавання БПЛА -->
@@ -229,37 +228,7 @@
         visitors.unshift(visitor); // Додаємо на початок
       }
 
-      // Зберігаємо в JSON файл
-      await saveVisitorsToFile();
-      
       updateIPList();
-    }
-
-    // Зберегти відвідувачів у файл
-    window.saveVisitorsToFile = async function() {
-      try {
-        const data = {
-          visitors: visitors,
-          lastUpdated: new Date().toISOString()
-        };
-        
-        // Створюємо Blob з JSON даними
-        const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
-        
-        // Створюємо посилання для завантаження
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = 'visitors.json';
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        URL.revokeObjectURL(url);
-        
-        console.log('Відвідувачі збережено в файл');
-      } catch (error) {
-        console.error('Помилка збереження файлу:', error);
-      }
     }
 
     // Оновити список IP
@@ -289,23 +258,8 @@
       addVisitor();
     };
 
-    // Завантажити збережені відвідувачі
-    async function loadVisitors() {
-      try {
-        const response = await fetch('visitors.json');
-        const data = await response.json();
-        visitors = data.visitors || [];
-        updateIPList();
-      } catch (error) {
-        console.error('Помилка завантаження відвідувачів:', error);
-        visitors = [];
-        updateIPList();
-      }
-    }
-
     // Ініціалізація
     (async function() {
-      await loadVisitors();
       await addVisitor(); // Додаємо поточного відвідувача
     })();
 
