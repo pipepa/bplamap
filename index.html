@@ -37,7 +37,11 @@
     <button onclick="clearAllHighlights()" style="background: #d32f2f; color: white; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer; margin: 2px;">🗑️ Очистити всі</button><br>
     <button onclick="highlightAll()" style="background: #1976d2; color: white; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer; margin: 2px;">🔴 Обвести всі</button><br>
     <button onclick="toggleDrawingMode()" style="background: #388e3c; color: white; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer; margin: 2px;">✏️ Малювати область</button><br>
-    <button onclick="clearDrawnAreas()" style="background: #7b1fa2; color: white; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer; margin: 2px;">🧹 Очистити малювання</button>
+    <button onclick="clearDrawnAreas()" style="background: #7b1fa2; color: white; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer; margin: 2px;">🧹 Очистити малювання</button><br>
+    <button onclick="highlightSpecific('Полтавська')" style="background: #ff5722; color: white; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer; margin: 2px;">📍 Полтавська</button><br>
+    <button onclick="highlightSpecific('Київська')" style="background: #ff9800; color: white; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer; margin: 2px;">📍 Київська</button><br>
+    <button onclick="highlightSpecific('Львівська')" style="background: #4caf50; color: white; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer; margin: 2px;">📍 Львівська</button><br>
+    <button onclick="highlightSpecific('Харківська')" style="background: #9c27b0; color: white; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer; margin: 2px;">📍 Харківська</button>
   </div>
 
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
@@ -68,14 +72,17 @@
           onEachFeature: function (feature, layer) {
             const name = feature.properties?.name || "Область";
 
-            layer.on('click', function (e) {
-              const popup = `
-                <strong>${name}</strong><br/>
-                <button onclick="highlight('${name}')">🔴 Обвести</button><br/>
-                <button onclick="unhighlight('${name}')">⚪ Зняти обведення</button>
-              `;
-              layer.bindPopup(popup).openPopup();
-            });
+                         layer.on('click', function (e) {
+               // Автоматично обводимо область при кліку
+               highlight(name);
+               
+               const popup = `
+                 <strong>${name}</strong><br/>
+                 <button onclick="highlight('${name}')">🔴 Обвести</button><br/>
+                 <button onclick="unhighlight('${name}')">⚪ Зняти обведення</button>
+               `;
+               layer.bindPopup(popup).openPopup();
+             });
 
             // Зберігаємо посилання на шар
             selectedLayers.set(feature.properties.name, layer);
@@ -200,6 +207,26 @@
         drawingLayer.clearLayers();
       }
       window.drawingPoints = [];
+    };
+
+    // Швидкий вибір конкретної області
+    window.highlightSpecific = function (regionName) {
+      // Спочатку очищаємо всі обведення
+      clearAllHighlights();
+      
+      // Потім обводимо конкретну область
+      const layer = selectedLayers.get(regionName);
+      if (layer) {
+        layer.setStyle({
+          color: "red",
+          weight: 3,
+          fillColor: "red",
+          fillOpacity: 0.3
+        });
+        
+        // Центруємо карту на вибраній області
+        map.fitBounds(layer.getBounds());
+      }
     };
   </script>
 </body>
