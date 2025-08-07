@@ -236,7 +236,7 @@
     }
 
     // Зберегти відвідувачів у файл
-    async function saveVisitorsToFile() {
+    window.saveVisitorsToFile = async function() {
       try {
         const data = {
           visitors: visitors,
