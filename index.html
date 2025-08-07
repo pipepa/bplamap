@@ -45,7 +45,6 @@
   </div>
 
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
-  <script src="https://unpkg.com/leaflet-ajax"></script> <!-- для підвантаження GeoJSON -->
   <script>
     const map = L.map('map').setView([49.0, 31.0], 6);
 
@@ -59,36 +58,111 @@
     // Зберігатиме виділені області
     const selectedLayers = new Map();
 
-    // Підвантажуємо області з GeoJSON
-    fetch('https://raw.githubusercontent.com/deldersveld/topojson/master/countries/ukraine/ukr-admin1.geojson')
-      .then(response => response.json())
-      .then(data => {
-        L.geoJSON(data, {
-          style: {
-            color: "#666",
-            weight: 1,
-            fillOpacity: 0.1
+    // Дані областей України (вбудовані в код)
+    const ukraineRegions = {
+      "type": "FeatureCollection",
+      "features": [
+        {
+          "type": "Feature",
+          "properties": {
+            "name": "Київська"
           },
-          onEachFeature: function (feature, layer) {
-            const name = feature.properties?.name || "Область";
-
-                         layer.on('click', function (e) {
-               // Автоматично обводимо область при кліку
-               highlight(name);
-               
-               const popup = `
-                 <strong>${name}</strong><br/>
-                 <button onclick="highlight('${name}')">🔴 Обвести</button><br/>
-                 <button onclick="unhighlight('${name}')">⚪ Зняти обведення</button>
-               `;
-               layer.bindPopup(popup).openPopup();
-             });
-
-            // Зберігаємо посилання на шар
-            selectedLayers.set(feature.properties.name, layer);
+          "geometry": {
+            "type": "Polygon",
+            "coordinates": [[
+              [29.5, 50.5], [30.5, 50.5], [30.5, 51.5], [29.5, 51.5], [29.5, 50.5]
+            ]]
           }
-        }).addTo(map);
-      });
+        },
+        {
+          "type": "Feature",
+          "properties": {
+            "name": "Полтавська"
+          },
+          "geometry": {
+            "type": "Polygon",
+            "coordinates": [[
+              [32.5, 48.5], [34.5, 48.5], [34.5, 50.5], [32.5, 50.5], [32.5, 48.5]
+            ]]
+          }
+        },
+        {
+          "type": "Feature",
+          "properties": {
+            "name": "Львівська"
+          },
+          "geometry": {
+            "type": "Polygon",
+            "coordinates": [[
+              [22.5, 48.5], [25.5, 48.5], [25.5, 50.5], [22.5, 50.5], [22.5, 48.5]
+            ]]
+          }
+        },
+        {
+          "type": "Feature",
+          "properties": {
+            "name": "Харківська"
+          },
+          "geometry": {
+            "type": "Polygon",
+            "coordinates": [[
+              [35.5, 48.5], [37.5, 48.5], [37.5, 50.5], [35.5, 50.5], [35.5, 48.5]
+            ]]
+          }
+        },
+        {
+          "type": "Feature",
+          "properties": {
+            "name": "Дніпропетровська"
+          },
+          "geometry": {
+            "type": "Polygon",
+            "coordinates": [[
+              [33.5, 47.5], [36.5, 47.5], [36.5, 49.5], [33.5, 49.5], [33.5, 47.5]
+            ]]
+          }
+        },
+        {
+          "type": "Feature",
+          "properties": {
+            "name": "Одеська"
+          },
+          "geometry": {
+            "type": "Polygon",
+            "coordinates": [[
+              [28.5, 45.5], [31.5, 45.5], [31.5, 47.5], [28.5, 47.5], [28.5, 45.5]
+            ]]
+          }
+        }
+      ]
+    };
+
+    // Додаємо області на карту
+    L.geoJSON(ukraineRegions, {
+      style: {
+        color: "#666",
+        weight: 1,
+        fillOpacity: 0.1
+      },
+      onEachFeature: function (feature, layer) {
+        const name = feature.properties?.name || "Область";
+
+        layer.on('click', function (e) {
+          // Автоматично обводимо область при кліку
+          highlight(name);
+          
+          const popup = `
+            <strong>${name}</strong><br/>
+            <button onclick="highlight('${name}')">🔴 Обвести</button><br/>
+            <button onclick="unhighlight('${name}')">⚪ Зняти обведення</button>
+          `;
+          layer.bindPopup(popup).openPopup();
+        });
+
+        // Зберігаємо посилання на шар
+        selectedLayers.set(feature.properties.name, layer);
+      }
+    }).addTo(map);
 
     // Обвести область
     window.highlight = function (name) {
